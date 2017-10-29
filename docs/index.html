@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Melbourne Clock</title>
+	<meta charset="utf-8" />
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<style type="text/css">
+		#mycanvas {
+			border: 1px solid grey;
+			display: flex;
+		}
+	</style>
+</head>
+<body>
+	<canvas id="mycanvas" width="750" height="725">
+		Your browser does not support this clock :(
+	</canvas>
+
+	<script type="text/javascript">
+		var mycanvas = document.getElementById("mycanvas");
+		var	context = mycanvas.getContext("2d");
+		var X_CENTRE = 375, Y_CENTRE = 375, MIN_HAND=210, HOUR_HAND=150, SEC_HAND=260;
+
+		// Draw the time on the clock face every 500ms
+		window.setInterval(drawClockWithTime, 500);
+
+		function calc_xy_adjustment(current_pos, hand_length) {
+			var returnValues = {};
+			var x, y;
+
+			// The current pos is a % (between 0 and 1) of the clock from 12 o'clock
+			// Need to adjust to be a percentage of the radians. 
+			// ie. radians starts from 3 o'clock, so need to minus 0.25 
+			var adjust_pos = current_pos - 0.25;
+			// if adjust value is less than 0 than can add 1 to get positive %
+			if (adjust_pos < 0)
+				adjust_pos = 1 + adjust_pos;
+			angle = 2*Math.PI * adjust_pos;
+			x = hand_length * Math.cos(angle);
+			y = hand_length * Math.sin(angle);
+			returnValues["x_adj"] = x;
+			returnValues["y_adj"] = y;
+			return returnValues;
+		}
+
+		function drawClockWithTime(argument) {
+			// Clear the entire canvas
+			context.clearRect(0,0,mycanvas.width,mycanvas.height);
+			// Draw the clock face and heading, and then the clock hands for the time
+			draw_clock();
+			draw_time();
+		}
+
+		function draw_clock() {
+			// Blue gradient colors for the clock face.
+			var gradient = context.createRadialGradient(X_CENTRE, Y_CENTRE, 70, X_CENTRE, Y_CENTRE, 250);
+			var clockRadius = 300;
+			var centerHandRadius = 4;
+
+			gradient.addColorStop(0, '#8ED6FF');
+			gradient.addColorStop(1, '#004CB3');
+
+			// Draw the clock face circle
+			context.beginPath();
+			context.fillStyle = gradient;
+			context.arc(X_CENTRE, Y_CENTRE, clockRadius, 0, 2*Math.PI);
+			context.fill();
+
+			// Draw the centre of clock circle to represent where the clock hands turn from
+			context.beginPath();
+			context.fillStyle = "white";
+			context.arc(X_CENTRE, Y_CENTRE, centerHandRadius, 0, 2*Math.PI);
+			context.fill();
+
+			// Draw the Clock numbers from 1 to 12 on the clock face
+			context.fillStyle = "#C2A200";
+			context.font = "50px Arial";
+			context.textAlign = "center";
+			// BaseLine puts the text in the MIDDLE of the line (better for clock numbers)
+			context.textBaseLine = "middle";
+			for (var i = 1; i <= 12; i++) {
+				context.fillText(i, X_CENTRE + clockRadius*0.8 * Math.sin(i*2*Math.PI/12),
+										Y_CENTRE +18 - (clockRadius*0.8 * Math.cos(i*2*Math.PI/12)));
+			}
+
+			// Draw the Heading above the clock
+			context.fillStyle = "#C2A200";
+			context.font = "45px Calibri";
+			context.fillText("Current Melbourne Time", 375, 55);
+		}
+		
+		function draw_time() {
+			var currentDate = new Date();
+			var hour = currentDate.getHours() + 1;
+			var mins = currentDate.getMinutes();
+			var secs = currentDate.getSeconds();
+			var returnAdjValues, x_to, y_to;
+
+			// Adjust for Melbourne time
+			hour += 11;
+			if (hour > 23)
+				hour -= 12;
+			// Draw the hour hand
+			if (hour > 12)
+				hour -= 12;
+			
+			// Calc and draw the hour hand.
+			var totalmins = 60 * hour + mins + secs/60;
+			// Pass the hour position as a percentage ie. 6 o'clock is 50% or 0.5
+			returnAdjValues = calc_xy_adjustment(totalmins/720, HOUR_HAND);
+			x_to = X_CENTRE + returnAdjValues.x_adj;
+			y_to = Y_CENTRE + returnAdjValues.y_adj;
+			context.beginPath();
+			context.lineWidth = 3;
+			context.strokeStyle = "white";
+			context.moveTo(X_CENTRE, Y_CENTRE);
+			context.lineTo(x_to, y_to);
+			context.stroke();
+
+			// Calc and Draw the minute hand
+			mins += secs/60;
+			//returnAdjValues = calc_xy_adjustment(mins * 100/60, MIN_HAND);
+			// Pass the minutes position as a percentage ie. 30 minutes is 50% or 0.5
+			returnAdjValues = calc_xy_adjustment(mins/60, MIN_HAND);
+			x_to = X_CENTRE + returnAdjValues.x_adj;
+			y_to = Y_CENTRE + returnAdjValues.y_adj;
+			context.beginPath();
+			context.lineWidth = 2;
+			context.strokeStyle = "white";
+			context.moveTo(X_CENTRE, Y_CENTRE);
+			context.lineTo(x_to, y_to);
+			context.stroke();
+		
+			// Calc and Draw the seconds hand
+			// Pass the seconds position as a percentage ie. 30 seconds is 50% or 0.5
+			returnAdjValues = calc_xy_adjustment(secs/60, SEC_HAND);
+			x_to = X_CENTRE + returnAdjValues.x_adj;
+			y_to = Y_CENTRE + returnAdjValues.y_adj;
+			context.beginPath();
+			context.lineWidth = 1;
+			context.strokeStyle = "white";
+			context.moveTo(X_CENTRE, Y_CENTRE);
+			context.lineTo(x_to, y_to);
+			context.stroke();
+		}
+
+
+	</script>
+</body>
+</html>
